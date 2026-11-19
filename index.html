@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistem Presensi & Bimbingan Profesi Ners</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; }
+    .tab-active { border-bottom: 3px solid #0f766e; color: #0f766e; font-weight: 700; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col text-slate-800">
+
+  <!-- HEADER DINAMIS -->
+  <header id="appHeader" class="bg-teal-700 text-white shadow-lg transition-colors duration-300">
+    <div class="max-w-5xl mx-auto px-4 py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-4 text-center sm:text-left">
+        <img id="headerLogo" src="https://cdn-icons-png.flaticon.com/512/2966/2966327.png" 
+             alt="Logo Institusi" class="w-14 h-14 rounded-xl bg-white p-1.5 object-contain shadow-md">
+        <div>
+          <h1 id="headerTitle" class="text-xl sm:text-2xl font-bold tracking-tight">
+            Sistem Presensi & Bimbingan Profesi Ners
+          </h1>
+          <p id="headerSubtitle" class="text-teal-100 text-xs sm:text-sm mt-0.5">
+            Praktik Klinik Keperawatan • Terintegrasi Google Drive & Sheets
+          </p>
+        </div>
+      </div>
+
+      <div class="bg-black/20 backdrop-blur-sm px-4 py-2 rounded-xl text-center border border-white/15">
+        <div id="liveDate" class="text-xs text-teal-100 font-medium">Memuat tanggal...</div>
+        <div id="liveClock" class="text-xl font-bold tracking-wider font-mono">00:00:00</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- NAVIGASI 3 BAGIAN -->
+  <nav class="bg-white shadow-sm sticky top-0 z-20">
+    <div class="max-w-5xl mx-auto px-4 flex justify-around sm:justify-start sm:gap-8">
+      <button onclick="switchTab('mahasiswa')" id="tab-mahasiswa" class="tab-active py-3.5 px-2 text-sm sm:text-base flex items-center gap-2 transition">
+        <i class="fa-solid fa-user-nurse"></i> <span>1. Presensi Mahasiswa</span>
+      </button>
+      <button onclick="switchTab('dosen')" id="tab-dosen" class="py-3.5 px-2 text-sm sm:text-base text-slate-500 hover:text-teal-700 flex items-center gap-2 transition">
+        <i class="fa-solid fa-chalkboard-user"></i> <span>2. Dosen Pembimbing</span>
+      </button>
+      <button onclick="switchTab('admin')" id="tab-admin" class="py-3.5 px-2 text-sm sm:text-base text-slate-500 hover:text-teal-700 flex items-center gap-2 transition">
+        <i class="fa-solid fa-sliders"></i> <span>3. Panel Admin</span>
+      </button>
+    </div>
+  </nav>
+
+  <main class="max-w-5xl mx-auto w-full px-4 py-6 flex-1">
+
+    <!-- BAGIAN 1: MAHASISWA -->
+    <section id="section-mahasiswa" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+      <div class="border-b border-slate-100 pb-4 mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">Presensi Kehadiran Klinik Mahasiswa</h2>
+          <p class="text-xs text-slate-500">Waktu otomatis mengikuti sistem & lokasi divalidasi oleh GPS area Rumah Sakit.</p>
+        </div>
+        <div class="text-xs bg-slate-100 px-3 py-1.5 rounded-lg text-slate-600">
+          Jadwal Pagi: <b id="lblPagi">07:00 - 14:30</b> | Siang: <b id="lblSiang">10:30 - 17:00</b>
+        </div>
+      </div>
+
+      <form id="formMahasiswa" onsubmit="handleSubmitMahasiswa(event)" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Nama Lengkap Mahasiswa *</label>
+            <input type="text" id="mhsNama" required placeholder="Contoh: Ns. Siti Aminah, S.Kep"
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:outline-none text-sm">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">NPM (Nomor Pokok Mahasiswa) *</label>
+            <input type="text" id="mhsNpm" required placeholder="Contoh: 20261014001"
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:outline-none text-sm">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Pilihan Shift Dinas *</label>
+            <select id="mhsDinas" onchange="evaluateAttendanceStatus()" required
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:outline-none text-sm bg-white">
+              <option value="Pagi">Dinas Pagi (Masuk 07.00 - Pulang 14.30)</option>
+              <option value="Siang">Dinas Siang (Masuk 10.30 - Pulang 17.00)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Jenis Absensi *</label>
+            <select id="mhsJenis" onchange="evaluateAttendanceStatus()" required
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:outline-none text-sm bg-white">
+              <option value="Masuk">Absen Masuk Dinas</option>
+              <option value="Pulang">Absen Pulang Dinas</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- KARTU WAKTU & GPS -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+            <span class="text-xs text-slate-500 block">Tanggal & Waktu Sistem (Terkunci)</span>
+            <span id="lockedTimestamp" class="text-sm font-bold text-slate-800 font-mono">-</span>
+            <div class="mt-2">
+              <span id="liveStatusBadge" class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                Memeriksa waktu...
+              </span>
+            </div>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col justify-between">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="text-xs text-slate-500 block">Validasi Lokasi GPS (<span id="lblHospitalName">Area Klinik</span>)</span>
+                <span id="gpsCoordText" class="text-xs font-mono text-slate-700">Mendeteksi koordinat satelit...</span>
+              </div>
+              <button type="button" onclick="refreshUserGPS()"
+                class="text-xs bg-white border border-slate-300 hover:bg-slate-100 px-2.5 py-1.5 rounded-lg text-slate-700 font-semibold shrink-0">
+                <i class="fa-solid fa-location-crosshairs"></i> Cek GPS
+              </button>
+            </div>
+            <div class="mt-2 flex items-center justify-between gap-2">
+              <span id="gpsStatusBadge" class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
+                <i class="fa-solid fa-spinner fa-spin"></i> Mencari sinyal GPS...
+              </span>
+              <a id="gpsMapLink" href="#" target="_blank" class="hidden text-xs text-teal-700 underline font-semibold">Lihat Peta</a>
+            </div>
+          </div>
+        </div>
+
+        <div id="dynamicMhsFields" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">Upload Bukti Kehadiran (Foto di Lokasi Dinas) *</label>
+          <div class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-teal-500 transition bg-slate-50/50">
+            <input type="file" id="mhsFoto" accept="image/*" capture="environment" required onchange="previewImage(this, 'mhsPreview')"
+              class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-teal-600 file:text-white hover:file:bg-teal-700 cursor-pointer">
+            <img id="mhsPreview" class="hidden mt-3 max-h-48 mx-auto rounded-lg shadow border" />
+          </div>
+        </div>
+
+        <button type="submit" id="btnSubmitMhs"
+          class="w-full bg-teal-700 hover:bg-teal-800 disabled:bg-slate-400 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl shadow transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-paper-plane"></i> Kirim Presensi Mahasiswa
+        </button>
+      </form>
+    </section>
+
+    <!-- BAGIAN 2: DOSEN PEMBIMBING -->
+    <section id="section-dosen" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+      <div class="border-b border-slate-100 pb-4 mb-5">
+        <h2 class="text-lg font-bold text-slate-800">Logbook & Dokumentasi Bimbingan Klinik</h2>
+        <p class="text-xs text-slate-500">Dokumen tersimpan rapi pada folder Google Drive atas nama Pembimbing.</p>
+      </div>
+
+      <form id="formDosen" onsubmit="handleSubmitDosen(event)" class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">Nama Dosen / Preseptor Pembimbing *</label>
+          <input type="text" id="dosenNama" required placeholder="Contoh: Ns. Budi Santoso, M.Kep."
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:outline-none text-sm">
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Tanggal Bimbingan *</label>
+            <input type="date" id="dosenTanggal" required
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:outline-none text-sm">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Waktu Bimbingan *</label>
+            <input type="time" id="dosenWaktu" required
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:outline-none text-sm">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">Isian Hasil Bimbingan / Evaluasi Mahasiswa *</label>
+          <textarea id="dosenHasil" rows="4" required placeholder="Tuliskan materi bimbingan dan nama mahasiswa..."
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:outline-none text-sm"></textarea>
+        </div>
+
+        <div id="dynamicDosenFields" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">Dokumentasi Foto Bimbingan *</label>
+          <div class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-teal-500 transition bg-slate-50/50">
+            <input type="file" id="dosenFoto" accept="image/*" required onchange="previewImage(this, 'dosenPreview')"
+              class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-teal-600 file:text-white hover:file:bg-teal-700 cursor-pointer">
+            <img id="dosenPreview" class="hidden mt-3 max-h-48 mx-auto rounded-lg shadow border" />
+          </div>
+        </div>
+
+        <button type="submit" id="btnSubmitDosen"
+          class="w-full bg-teal-700 hover:bg-teal-800 text-white font-bold py-3 rounded-xl shadow transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-folder-plus"></i> Simpan Dokumentasi Bimbingan
+        </button>
+      </form>
+    </section>
+
+    <!-- BAGIAN 3: ADMIN -->
+    <section id="section-admin" class="hidden space-y-6">
+      <div id="adminLoginBox" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 max-w-md mx-auto text-center">
+        <div class="w-12 h-12 bg-teal-100 text-teal-700 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
+          <i class="fa-solid fa-lock"></i>
+        </div>
+        <h3 class="text-lg font-bold text-slate-800">Akses Panel Administrator</h3>
+        <p class="text-xs text-slate-500 mb-4">Masukkan PIN Admin (Default: <b>123456</b>)</p>
+        <input type="password" id="inputAdminPin" placeholder="Masukkan PIN Admin"
+          class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-center tracking-widest font-bold mb-3 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+        <button onclick="unlockAdmin()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-2.5 rounded-xl transition">
+          Buka Panel Admin
+        </button>
+      </div>
+
+      <div id="adminDashboard" class="hidden space-y-6">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5">
+          <h3 class="text-base font-bold text-slate-800 border-b pb-3 flex items-center gap-2">
+            <i class="fa-solid fa-palette text-teal-600"></i> Pengaturan Header, Lokasi GPS Klinik & Jadwal Dinas
+          </h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Judul Utama Aplikasi</label>
+              <input type="text" id="cfgTitle" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Subjudul / Institusi</label>
+              <input type="text" id="cfgSubtitle" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">URL Logo Institusi</label>
+              <input type="url" id="cfgLogo" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Warna Header</label>
+                <input type="color" id="cfgColor" value="#0f766e" class="w-full h-9 p-1 rounded-lg border border-slate-300 cursor-pointer">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">PIN Admin</label>
+                <input type="text" id="cfgNewPin" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-mono">
+              </div>
+            </div>
+          </div>
+
+          <!-- GPS CONFIG -->
+          <div class="bg-teal-50/60 border border-teal-200 rounded-xl p-4 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <h4 class="text-sm font-bold text-teal-900">Pengaturan Koordinat GPS Rumah Sakit / Klinik</h4>
+              <div class="flex items-center gap-3">
+                <label class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer">
+                  <input type="checkbox" id="cfgGpsEnabled" class="rounded text-teal-600 w-4 h-4">
+                  Wajibkan Validasi GPS
+                </label>
+                <button type="button" onclick="useCurrentAdminLocation()" class="text-xs bg-teal-700 hover:bg-teal-800 text-white px-3 py-1.5 rounded-lg font-semibold">
+                  Ambil Lokasi Saya Saat Ini
+                </button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Nama Rumah Sakit</label>
+                <input type="text" id="cfgHospitalName" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Latitude</label>
+                <input type="text" id="cfgHospitalLat" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-mono bg-white">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Longitude</label>
+                <input type="text" id="cfgHospitalLng" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-mono bg-white">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Radius (Meter)</label>
+                <input type="number" id="cfgHospitalRadius" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-mono bg-white">
+              </div>
+            </div>
+          </div>
+
+          <!-- JADWAL -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2 border-t">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Masuk Pagi</label>
+              <input type="time" id="cfgPagiMasuk" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Pulang Pagi</label>
+              <input type="time" id="cfgPagiPulang" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Masuk Siang</label>
+              <input type="time" id="cfgSiangMasuk" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Pulang Siang</label>
+              <input type="time" id="cfgSiangPulang" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+            </div>
+          </div>
+
+          <!-- CUSTOM FIELDS -->
+          <div class="pt-3 border-t">
+            <h4 class="text-sm font-bold text-slate-700 mb-2">Tambah Item Baru pada Form</h4>
+            <div class="flex flex-col sm:flex-row gap-2 mb-3">
+              <select id="newFieldTarget" class="px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+                <option value="mahasiswa">Form Mahasiswa</option>
+                <option value="dosen">Form Dosen Pembimbing</option>
+              </select>
+              <input type="text" id="newFieldLabel" placeholder="Nama Item Baru (misal: Ruangan / Stase)"
+                class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm">
+              <button type="button" onclick="addCustomField()" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+                + Tambah Item
+              </button>
+            </div>
+            <div id="customFieldsList" class="flex flex-wrap gap-2"></div>
+          </div>
+
+          <button onclick="saveAdminConfig()" id="btnSaveCfg" class="w-full bg-teal-700 hover:bg-teal-800 text-white font-bold py-2.5 rounded-xl shadow transition">
+            Simpan Semua Pengaturan Admin
+          </button>
+        </div>
+
+        <!-- TABEL REKAP -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-bold text-slate-800">Kelola Rekap Kegiatan</h3>
+            <button onclick="fetchAllRecords()" class="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg font-semibold">
+              Muat Ulang Data
+            </button>
+          </div>
+          
+          <h4 class="text-xs font-bold uppercase text-teal-700 mb-2">Rekap Presensi Mahasiswa</h4>
+          <div class="overflow-x-auto mb-6 border rounded-xl">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-100 text-slate-700 font-bold">
+                <tr>
+                  <th class="p-2.5">ID</th>
+                  <th class="p-2.5">Waktu</th>
+                  <th class="p-2.5">Nama / NPM</th>
+                  <th class="p-2.5">Dinas</th>
+                  <th class="p-2.5">Status</th>
+                  <th class="p-2.5">GPS</th>
+                  <th class="p-2.5">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="tableAdminMhs" class="divide-y"></tbody>
+            </table>
+          </div>
+
+          <h4 class="text-xs font-bold uppercase text-teal-700 mb-2">Rekap Bimbingan Dosen</h4>
+          <div class="overflow-x-auto border rounded-xl">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-100 text-slate-700 font-bold">
+                <tr>
+                  <th class="p-2.5">ID</th>
+                  <th class="p-2.5">Waktu</th>
+                  <th class="p-2.5">Pembimbing</th>
+                  <th class="p-2.5">Hasil</th>
+                  <th class="p-2.5">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="tableAdminDosen" class="divide-y"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="fixed bottom-5 right-5 hidden bg-slate-900 text-white px-5 py-3 rounded-xl shadow-xl text-sm z-50"></div>
+
+  <script>
+    // =========================================================================
+    // TEMPELKAN URL WEB APP (/exec) GOOGLE APPS SCRIPT ANDA DI BAWAH INI:
+    // =========================================================================
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxTpPS-iunYlpIX_IykSEMXWf_q7PIJQynpHmbYMMHhR79GQitXkz5yOT9Xu-ytNsBs/exec";
+
+    let currentPin = "";
+    let userLocation = { lat: null, lng: null, isWithinRadius: false, distance: null };
+    let appConfig = {
+      appTitle: "Sistem Presensi & Bimbingan Profesi Ners",
+      appSubtitle: "Fakultas Ilmu Kesehatan - Praktik Klinik Keperawatan",
+      logoUrl: "https://cdn-icons-png.flaticon.com/512/2966/2966327.png",
+      bannerColor: "#0f766e",
+      pagiMasuk: "07:00", pagiPulang: "14:30",
+      siangMasuk: "10:30", siangPulang: "17:00",
+      adminPin: "123456", gpsEnabled: "true",
+      hospitalName: "RSUD / Lahan Praktik Klinik Utama",
+      hospitalLat: "-5.114500", hospitalLng: "105.306800", hospitalRadius: "200",
+      customFieldsMhs: [], customFieldsDosen: []
+    };
+
+    // Helper POST ke Google Apps Script (menggunakan text/plain agar bebas CORS Preflight)
+    async function postToGas(payload) {
+      const res = await fetch(SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+      return await res.json();
+    }
+
+    function calculateDistanceMeters(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+    }
+
+    function refreshUserGPS() {
+      const badge = document.getElementById("gpsStatusBadge");
+      const coordText = document.getElementById("gpsCoordText");
+      const mapLink = document.getElementById("gpsMapLink");
+      const btnSubmit = document.getElementById("btnSubmitMhs");
+
+      document.getElementById("lblHospitalName").textContent = appConfig.hospitalName;
+
+      if (String(appConfig.gpsEnabled) !== "true") {
+        userLocation.isWithinRadius = true;
+        coordText.textContent = "Validasi GPS dinonaktifkan oleh Admin.";
+        badge.className = "inline-block px-3 py-1 rounded-full text-xs font-bold bg-slate-200 text-slate-700";
+        badge.textContent = "GPS Tidak Diwajibkan";
+        btnSubmit.disabled = false;
+        return;
+      }
+
+      if (!navigator.geolocation) {
+        badge.className = "inline-block px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800";
+        badge.textContent = "Browser tidak mendukung GPS";
+        btnSubmit.disabled = true;
+        return;
+      }
+
+      badge.className = "inline-block px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800";
+      badge.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Mendeteksi posisi...`;
+      btnSubmit.disabled = true;
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const maxRadius = parseFloat(appConfig.hospitalRadius) || 200;
+          const dist = calculateDistanceMeters(lat, lng, parseFloat(appConfig.hospitalLat), parseFloat(appConfig.hospitalLng));
+
+          userLocation = { lat, lng, distance: dist, isWithinRadius: dist <= maxRadius };
+          coordText.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)} (Jarak: ${dist}m)`;
+          mapLink.href = `https://www.google.com/maps?q=${lat},${lng}`;
+          mapLink.classList.remove("hidden");
+
+          if (userLocation.isWithinRadius) {
+            badge.className = "inline-block px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800";
+            badge.textContent = `Di Dalam Area Klinik (${dist}m / maks ${maxRadius}m)`;
+            btnSubmit.disabled = false;
+          } else {
+            badge.className = "inline-block px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800";
+            badge.textContent = `Di Luar Area Klinik (${dist}m dari ${appConfig.hospitalName})`;
+            btnSubmit.disabled = true;
+          }
+        },
+        () => {
+          coordText.textContent = "Izin lokasi ditolak / GPS mati.";
+          badge.className = "inline-block px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800";
+          badge.textContent = "Aktifkan GPS & Izinkan Lokasi Browser!";
+          btnSubmit.disabled = true;
+        },
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+      );
+    }
+
+    function useCurrentAdminLocation() {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          document.getElementById("cfgHospitalLat").value = pos.coords.latitude.toFixed(6);
+          document.getElementById("cfgHospitalLng").value = pos.coords.longitude.toFixed(6);
+          showToast("Koordinat lokasi saat ini berhasil diisi!");
+        },
+        (err) => alert("Gagal mengambil lokasi: " + err.message),
+        { enableHighAccuracy: true }
+      );
+    }
+
+    function updateClock() {
+      const now = new Date();
+      document.getElementById("liveDate").textContent = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      const timeStr = now.toTimeString().split(' ')[0];
+      document.getElementById("liveClock").textContent = timeStr;
+      document.getElementById("lockedTimestamp").textContent = `${now.toLocaleDateString('id-ID')} • ${timeStr}`;
+      evaluateAttendanceStatus();
+    }
+    setInterval(updateClock, 1000);
+
+    function timeToMins(t) {
+      const [h, m] = t.split(":").map(Number);
+      return h * 60 + m;
+    }
+
+    function evaluateAttendanceStatus() {
+      const now = new Date();
+      const curMins = now.getHours() * 60 + now.getMinutes();
+      const dinas = document.getElementById("mhsDinas").value;
+      const jenis = document.getElementById("mhsJenis").value;
+      const badge = document.getElementById("liveStatusBadge");
+
+      if (jenis === "Masuk") {
+        const batas = dinas === "Pagi" ? appConfig.pagiMasuk : appConfig.siangMasuk;
+        const batasMins = timeToMins(batas);
+        if (curMins > batasMins) {
+          badge.className = "inline-block px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800";
+          badge.textContent = `TERLAMBAT (${curMins - batasMins} menit dari batas ${batas})`;
+        } else {
+          badge.className = "inline-block px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800";
+          badge.textContent = `TEPAT WAKTU (Batas masuk ${batas})`;
+        }
+      } else {
+        const pulang = dinas === "Pagi" ? appConfig.pagiPulang : appConfig.siangPulang;
+        const pulangMins = timeToMins(pulang);
+        if (curMins < pulangMins) {
+          badge.className = "inline-block px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800";
+          badge.textContent = `BELUM WAKTU PULANG (Jadwal ${pulang})`;
+        } else {
+          badge.className = "inline-block px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800";
+          badge.textContent = `WAKTU PULANG SESUAI JADWAL (${pulang})`;
+        }
+      }
+    }
+
+    function switchTab(tab) {
+      ["mahasiswa", "dosen", "admin"].forEach(t => {
+        document.getElementById(`section-${t}`).classList.add("hidden");
+        document.getElementById(`tab-${t}`).classList.remove("tab-active");
+        document.getElementById(`tab-${t}`).classList.add("text-slate-500");
+      });
+      document.getElementById(`section-${tab}`).classList.remove("hidden");
+      document.getElementById(`tab-${tab}`).classList.add("tab-active");
+      document.getElementById(`tab-${tab}`).classList.remove("text-slate-500");
+    }
+
+    function applyConfigToUI() {
+      document.getElementById("headerTitle").textContent = appConfig.appTitle;
+      document.getElementById("headerSubtitle").textContent = appConfig.appSubtitle;
+      document.getElementById("headerLogo").src = appConfig.logoUrl;
+      document.getElementById("appHeader").style.backgroundColor = appConfig.bannerColor;
+      document.getElementById("lblPagi").textContent = `${appConfig.pagiMasuk} - ${appConfig.pagiPulang}`;
+      document.getElementById("lblSiang").textContent = `${appConfig.siangMasuk} - ${appConfig.siangPulang}`;
+
+      document.getElementById("cfgTitle").value = appConfig.appTitle;
+      document.getElementById("cfgSubtitle").value = appConfig.appSubtitle;
+      document.getElementById("cfgLogo").value = appConfig.logoUrl;
+      document.getElementById("cfgColor").value = appConfig.bannerColor;
+      document.getElementById("cfgNewPin").value = appConfig.adminPin;
+      document.getElementById("cfgPagiMasuk").value = appConfig.pagiMasuk;
+      document.getElementById("cfgPagiPulang").value = appConfig.pagiPulang;
+      document.getElementById("cfgSiangMasuk").value = appConfig.siangMasuk;
+      document.getElementById("cfgSiangPulang").value = appConfig.siangPulang;
+      document.getElementById("cfgGpsEnabled").checked = String(appConfig.gpsEnabled) === "true";
+      document.getElementById("cfgHospitalName").value = appConfig.hospitalName;
+      document.getElementById("cfgHospitalLat").value = appConfig.hospitalLat;
+      document.getElementById("cfgHospitalLng").value = appConfig.hospitalLng;
+      document.getElementById("cfgHospitalRadius").value = appConfig.hospitalRadius;
+
+      renderDynamicFields();
+      refreshUserGPS();
+    }
+
+    function renderDynamicFields() {
+      document.getElementById("dynamicMhsFields").innerHTML = appConfig.customFieldsMhs.map(f => `
+        <div><label class="block text-sm font-semibold text-slate-700 mb-1">${f} *</label>
+        <input type="text" data-custom-mhs="${f}" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm"></div>
+      `).join("");
+
+      document.getElementById("dynamicDosenFields").innerHTML = appConfig.customFieldsDosen.map(f => `
+        <div><label class="block text-sm font-semibold text-slate-700 mb-1">${f} *</label>
+        <input type="text" data-custom-dosen="${f}" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm"></div>
+      `).join("");
+
+      document.getElementById("customFieldsList").innerHTML = [
+        ...appConfig.customFieldsMhs.map((f, i) => `<span class="bg-teal-50 text-teal-800 border border-teal-200 px-3 py-1 rounded-full text-xs">Mhs: ${f} <button type="button" onclick="removeCustomField('mahasiswa', ${i})" class="text-rose-600 font-bold ml-1">&times;</button></span>`),
+        ...appConfig.customFieldsDosen.map((f, i) => `<span class="bg-indigo-50 text-indigo-800 border border-indigo-200 px-3 py-1 rounded-full text-xs">Dosen: ${f} <button type="button" onclick="removeCustomField('dosen', ${i})" class="text-rose-600 font-bold ml-1">&times;</button></span>`)
+      ].join("");
+    }
+
+    function compressImageToBase64(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            const MAX_WIDTH = 900;
+            const scale = MAX_WIDTH / img.width;
+            canvas.width = img.width > MAX_WIDTH ? MAX_WIDTH : img.width;
+            canvas.height = img.width > MAX_WIDTH ? img.height * scale : img.height;
+            canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL("image/jpeg", 0.75));
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function previewImage(input, previewId) {
+      const img = document.getElementById(previewId);
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => { img.src = e.target.result; img.classList.remove("hidden"); };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.remove("hidden");
+      setTimeout(() => t.classList.add("hidden"), 4000);
+    }
+
+    async function handleSubmitMahasiswa(e) {
+      e.preventDefault();
+      const btn = document.getElementById("btnSubmitMhs");
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Mengirim Presensi...`;
+
+      try {
+        const fotoBase64 = await compressImageToBase64(document.getElementById("mhsFoto").files[0]);
+        const customData = {};
+        document.querySelectorAll("[data-custom-mhs]").forEach(el => customData[el.dataset.customMhs] = el.value);
+
+        const res = await postToGas({
+          action: "submitMahasiswa",
+          nama: document.getElementById("mhsNama").value,
+          npm: document.getElementById("mhsNpm").value,
+          dinas: document.getElementById("mhsDinas").value,
+          jenisAbsen: document.getElementById("mhsJenis").value,
+          userLat: userLocation.lat,
+          userLng: userLocation.lng,
+          fotoBase64,
+          customData
+        });
+
+        if (res.status === "success") {
+          alert(`${res.message}\nStatus: ${res.detail.statusKehadiran}\nLokasi: ${res.detail.gpsInfoStr}`);
+          document.getElementById("formMahasiswa").reset();
+          document.getElementById("mhsPreview").classList.add("hidden");
+          refreshUserGPS();
+        } else {
+          alert(res.message);
+        }
+      } catch (err) {
+        alert("Gagal terhubung ke server: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim Presensi Mahasiswa`;
+      }
+    }
+
+    async function handleSubmitDosen(e) {
+      e.preventDefault();
+      const btn = document.getElementById("btnSubmitDosen");
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...`;
+
+      try {
+        const fotoBase64 = await compressImageToBase64(document.getElementById("dosenFoto").files[0]);
+        const customData = {};
+        document.querySelectorAll("[data-custom-dosen]").forEach(el => customData[el.dataset.customDosen] = el.value);
+
+        const res = await postToGas({
+          action: "submitDosen",
+          namaDosen: document.getElementById("dosenNama").value,
+          tanggalBimbingan: document.getElementById("dosenTanggal").value,
+          waktuBimbingan: document.getElementById("dosenWaktu").value,
+          hasilBimbingan: document.getElementById("dosenHasil").value,
+          fotoBase64,
+          customData
+        });
+
+        alert(res.message);
+        if (res.status === "success") {
+          document.getElementById("formDosen").reset();
+          document.getElementById("dosenPreview").classList.add("hidden");
+        }
+      } catch (err) {
+        alert("Gagal menyimpan: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-folder-plus"></i> Simpan Dokumentasi Bimbingan`;
+      }
+    }
+
+    async function unlockAdmin() {
+      const pin = document.getElementById("inputAdminPin").value;
+      if (!pin) return alert("Masukkan PIN!");
+      currentPin = pin;
+      const res = await fetch(`${SCRIPT_URL}?action=getAllData&pin=${encodeURIComponent(pin)}`).then(r => r.json());
+      if (res.status === "success") {
+        appConfig.adminPin = res.config.adminPin;
+        applyConfigToUI();
+        document.getElementById("adminLoginBox").classList.add("hidden");
+        document.getElementById("adminDashboard").classList.remove("hidden");
+        renderAdminTables(res);
+      } else {
+        alert(res.message);
+      }
+    }
+
+    function addCustomField() {
+      const target = document.getElementById("newFieldTarget").value;
+      const label = document.getElementById("newFieldLabel").value.trim();
+      if (!label) return;
+      if (target === "mahasiswa") appConfig.customFieldsMhs.push(label);
+      else appConfig.customFieldsDosen.push(label);
+      document.getElementById("newFieldLabel").value = "";
+      renderDynamicFields();
+    }
+
+    function removeCustomField(target, idx) {
+      if (target === "mahasiswa") appConfig.customFieldsMhs.splice(idx, 1);
+      else appConfig.customFieldsDosen.splice(idx, 1);
+      renderDynamicFields();
+    }
+
+    async function saveAdminConfig() {
+      const btn = document.getElementById("btnSaveCfg");
+      btn.disabled = true;
+      appConfig.appTitle = document.getElementById("cfgTitle").value;
+      appConfig.appSubtitle = document.getElementById("cfgSubtitle").value;
+      appConfig.logoUrl = document.getElementById("cfgLogo").value;
+      appConfig.bannerColor = document.getElementById("cfgColor").value;
+      appConfig.adminPin = document.getElementById("cfgNewPin").value;
+      appConfig.pagiMasuk = document.getElementById("cfgPagiMasuk").value;
+      appConfig.pagiPulang = document.getElementById("cfgPagiPulang").value;
+      appConfig.siangMasuk = document.getElementById("cfgSiangMasuk").value;
+      appConfig.siangPulang = document.getElementById("cfgSiangPulang").value;
+      appConfig.gpsEnabled = document.getElementById("cfgGpsEnabled").checked ? "true" : "false";
+      appConfig.hospitalName = document.getElementById("cfgHospitalName").value;
+      appConfig.hospitalLat = document.getElementById("cfgHospitalLat").value.trim();
+      appConfig.hospitalLng = document.getElementById("cfgHospitalLng").value.trim();
+      appConfig.hospitalRadius = document.getElementById("cfgHospitalRadius").value;
+
+      const res = await postToGas({
+        action: "updateConfig",
+        pin: currentPin,
+        config: {
+          ...appConfig,
+          customFieldsMhs: JSON.stringify(appConfig.customFieldsMhs),
+          customFieldsDosen: JSON.stringify(appConfig.customFieldsDosen)
+        }
+      });
+      btn.disabled = false;
+      if (res.status === "success") {
+        currentPin = appConfig.adminPin;
+        applyConfigToUI();
+        showToast(res.message);
+      } else {
+        alert(res.message);
+      }
+    }
+
+    async function fetchAllRecords() {
+      const res = await fetch(`${SCRIPT_URL}?action=getAllData&pin=${encodeURIComponent(currentPin)}`).then(r => r.json());
+      if (res.status === "success") renderAdminTables(res);
+    }
+
+    function renderAdminTables(res) {
+      document.getElementById("tableAdminMhs").innerHTML = res.mahasiswa.slice(1).reverse().map(r => `
+        <tr class="hover:bg-slate-50">
+          <td class="p-2.5 font-mono">${r[0]}</td>
+          <td class="p-2.5">${r[1]} ${r[2]}</td>
+          <td class="p-2.5"><b>${r[3]}</b><br>${r[4]}</td>
+          <td class="p-2.5">${r[5]} (${r[6]})</td>
+          <td class="p-2.5 font-semibold">${r[7]}</td>
+          <td class="p-2.5 font-mono text-[11px]">${r[8]}</td>
+          <td class="p-2.5 flex gap-2">
+            <a href="${r[9]}" target="_blank" class="text-teal-600 underline">Foto</a>
+            <button onclick="deleteRow('Rekap_Mahasiswa', '${r[0]}')" class="text-rose-600">Hapus</button>
+          </td>
+        </tr>
+      `).join("");
+
+      document.getElementById("tableAdminDosen").innerHTML = res.dosen.slice(1).reverse().map(r => `
+        <tr class="hover:bg-slate-50">
+          <td class="p-2.5 font-mono">${r[0]}</td>
+          <td class="p-2.5">${r[1]} ${r[2]}</td>
+          <td class="p-2.5 font-bold">${r[3]}</td>
+          <td class="p-2.5 max-w-xs truncate">${r[4]}</td>
+          <td class="p-2.5 flex gap-2">
+            <a href="${r[5]}" target="_blank" class="text-teal-600 underline">Foto</a>
+            <button onclick="deleteRow('Rekap_Bimbingan_Dosen', '${r[0]}')" class="text-rose-600">Hapus</button>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    async function deleteRow(sheetName, recordId) {
+      if (!confirm(`Hapus data ${recordId}?`)) return;
+      const res = await postToGas({ action: "editRecord", pin: currentPin, sheetName, recordId, deleteRow: true });
+      showToast(res.message);
+      fetchAllRecords();
+    }
+
+    // Inisialisasi awal
+    updateClock();
+    fetch(`${SCRIPT_URL}?action=getConfig`)
+      .then(r => r.json())
+      .then(res => {
+        if (res.status === "success") {
+          appConfig = {
+            ...appConfig,
+            ...res.data,
+            customFieldsMhs: JSON.parse(res.data.customFieldsMhs || "[]"),
+            customFieldsDosen: JSON.parse(res.data.customFieldsDosen || "[]")
+          };
+          applyConfigToUI();
+        }
+      })
+      .catch(() => applyConfigToUI());
+  </script>
+</body>
+</html>
