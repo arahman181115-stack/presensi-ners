@@ -694,19 +694,55 @@
       }
     }
 
-    async function unlockAdmin() {
-      const pin = document.getElementById("inputAdminPin").value;
-      if (!pin) return alert("Masukkan PIN!");
-      currentPin = pin;
-      const res = await fetch(`${SCRIPT_URL}?action=getAllData&pin=${encodeURIComponent(pin)}`).then(r => r.json());
-      if (res.status === "success") {
-        appConfig.adminPin = res.config.adminPin;
-        applyConfigToUI();
-        document.getElementById("adminLoginBox").classList.add("hidden");
-        document.getElementById("adminDashboard").classList.remove("hidden");
-        renderAdminTables(res);
-      } else {
-        alert(res.message);
+   async function unlockAdmin() {
+      const pin = document.getElementById("inputAdminPin").value.trim();
+      if (!pin) return alert("Masukkan PIN Admin terlebih dahulu!");
+
+      const btn = document.querySelector("#adminLoginBox button");
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Memverifikasi PIN...`;
+
+      // Cek apakah SCRIPT_URL sudah diisi dengan benar
+      if (!SCRIPT_URL || SCRIPT_URL.includes("GANTI_DENGAN_ID")) {
+        if (pin === "123456") {
+          currentPin = pin;
+          document.getElementById("adminLoginBox").classList.add("hidden");
+          document.getElementById("adminDashboard").classList.remove("hidden");
+          alert("Berhasil masuk (Mode Lokal)! Segera isi variabel SCRIPT_URL di file index.html dengan URL Web App (/exec) Google Apps Script Anda agar data tersimpan ke Drive & Sheets.");
+        } else {
+          alert("PIN salah! (PIN Default: 123456)");
+        }
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        return;
+      }
+
+      try {
+        const response = await fetch(`${SCRIPT_URL}?action=getAllData&pin=${encodeURIComponent(pin)}`);
+        const res = await response.json();
+
+        if (res.status === "success") {
+          currentPin = pin;
+          appConfig.adminPin = res.config.adminPin;
+          applyConfigToUI();
+          document.getElementById("adminLoginBox").classList.add("hidden");
+          document.getElementById("adminDashboard").classList.remove("hidden");
+          renderAdminTables(res);
+        } else {
+          alert(res.message || "PIN Admin salah!");
+        }
+      } catch (err) {
+        alert(
+          "Gagal terhubung ke server Google Apps Script!\n\n" +
+          "Pastikan 2 hal ini sudah benar:\n" +
+          "1. Variabel SCRIPT_URL di index.html sudah diisi URL Web App (/exec) milik Anda.\n" +
+          "2. Pada Google Apps Script, deployment sudah diatur ke 'Yang memiliki akses: Siapa saja (Anyone)'."
+        );
+        console.error(err);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
       }
     }
 
