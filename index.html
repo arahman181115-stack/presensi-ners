@@ -704,7 +704,7 @@
       btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Memverifikasi PIN...`;
 
       // Cek apakah SCRIPT_URL sudah diisi dengan benar
-      if (!SCRIPT_URL || SCRIPT_URL.includes("GANTI_DENGAN_ID")) {
+      if (!SCRIPT_URL || SCRIPT_URL.includes("https://script.google.com/macros/s/AKfycbxTpPS-iunYlpIX_IykSEMXWf_q7PIJQynpHmbYMMHhR79GQitXkz5yOT9Xu-ytNsBs/exec")) {
         if (pin === "123456") {
           currentPin = pin;
           document.getElementById("adminLoginBox").classList.add("hidden");
